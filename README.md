@@ -1,2 +1,0 @@
-# RP_Martinez_Lola_Serrano_Jorge
-ROSProject

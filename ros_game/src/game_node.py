@@ -62,6 +62,10 @@ class GameNode:
         self.clock = pygame.time.Clock()
         self.running = True
 
+        self.can_shoot = True
+        self.shoot_cooldown = 0.5
+        self.last_shoot_time = 0
+
     def user_callback(self, data):
         if self.phase == "WELCOME":
             self.user_info = data
@@ -74,7 +78,27 @@ class GameNode:
             elif data.data == "RIGHT" and self.player_x < self.ANCHO - 50:
                 self.player_x += self.player_speed
             elif data.data == "SHOOT":
-                self.disparos.append([self.player_x + 25 - self.disparo_ancho//2, self.player_y])
+                current_time = time.time()
+                if current_time - self.last_shoot_time > self.shoot_cooldown:
+                    self.disparos.append([self.player_x + 25 - self.disparo_ancho//2, self.player_y])
+                    self.last_shoot_time = current_time
+    
+    def manejar_disparos_enemigos(self):
+
+        for enemigo in self.enemigos_estaticos:
+            enemigo['tiempo_disparo'] = enemigo.get('tiempo_disparo', 0) + 1
+            if enemigo['tiempo_disparo'] >= 180:
+                if random.random() < 0.5:
+                    self.disparos_enemigos.append([enemigo['x'] + self.enemigo_ancho//2, enemigo['y'] + self.enemigo_alto])
+                    enemigo['tiempo_disparo'] = 0
+
+        for enemigo in self.enemigos_caida:
+            if enemigo['estado'] == 'disparando':
+                enemigo['tiempo_disparo'] = enemigo.get('tiempo_disparo', 0) + 1
+                if enemigo['tiempo_disparo'] >= 180:
+                    if random.random() < 0.5:
+                        self.disparos_enemigos.append([enemigo['x'] + self.enemigo_ancho//2, enemigo['y'] + self.enemigo_alto])
+                        enemigo['tiempo_disparo'] = 0
 
     def crear_enemigos_para_nivel(self):
         self.enemigos_estaticos.clear()
@@ -227,6 +251,7 @@ class GameNode:
             self.screen.blit(level_text, (self.ANCHO - 100, 10))
             
             self.mover_elementos()
+            self.manejar_disparos_enemigos()
             self.check_colisiones()
             
             # Verificar si se completó el nivel

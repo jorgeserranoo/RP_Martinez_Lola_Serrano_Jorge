@@ -12,7 +12,6 @@ class ControlNode:
         self.control_pub = rospy.Publisher('keyboard_control', String, queue_size=10)
         self.rate = rospy.Rate(60)  # 60Hz para coincidir con el juego
         self.running = True
-        self.last_key = None
 
     def get_key(self):
         """Captura una tecla sin necesidad de Enter"""
@@ -37,16 +36,16 @@ class ControlNode:
                 # Lee los siguientes dos caracteres para determinar la tecla
                 key = sys.stdin.read(2)
                 if key == '[D':  # Flecha izquierda
-                    self.last_key = "LEFT"
+                    self.control_pub.publish("LEFT")
                 elif key == '[C':  # Flecha derecha
-                    self.last_key = "RIGHT"
+                    self.control_pub.publish("RIGHT")
             elif key == ' ':  # Espacio
-                self.last_key = "SHOOT"
+                self.control_pub.publish("SHOOT")
             elif key == 'q':  # Tecla para salir
                 self.running = False
                 rospy.signal_shutdown("User requested quit")
             else:
-                self.last_key = None
+                self.control_pub.publish("STOP")  # Añadido para detener el movimiento
 
     def run(self):
         # Iniciar thread para leer teclas
@@ -54,10 +53,8 @@ class ControlNode:
         key_thread.daemon = True
         key_thread.start()
 
-        # Loop principal para publicar controles
+        # Loop principal
         while self.running and not rospy.is_shutdown():
-            if self.last_key is not None:
-                self.control_pub.publish(self.last_key)
             self.rate.sleep()
 
 if __name__ == '__main__':

@@ -5,6 +5,7 @@ import sys
 import termios
 import tty
 import threading
+import time
 
 class ControlNode:
     def __init__(self):
@@ -12,17 +13,24 @@ class ControlNode:
         self.control_pub = rospy.Publisher('keyboard_control', String, queue_size=10)
         self.rate = rospy.Rate(60)  # 60Hz para coincidir con el juego
         self.running = True
+        self.current_key = None
+        self.key_pressed = False
 
-    def get_key(self):
-        """Captura una tecla sin necesidad de Enter"""
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        try:
-            tty.setraw(sys.stdin.fileno())
-            ch = sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch
+    def get_key_nonblocking(self):
+        """Captura una tecla sin bloquear"""
+        if sys.stdin.isatty():
+            try:
+                fd = sys.stdin.fileno()
+                old_settings = termios.tcgetattr(fd)
+                try:
+                    tty.setraw(sys.stdin.fileno())
+                    ch = sys.stdin.read(1) if sys.stdin.readable() else None
+                finally:
+                    termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+                return ch
+            except:
+                return None
+        return None
 
     def key_reader(self):
         """Thread que lee constantemente las teclas presionadas"""
@@ -30,22 +38,27 @@ class ControlNode:
         rospy.loginfo("Press 'q' to quit")
         
         while self.running and not rospy.is_shutdown():
-            key = self.get_key()
+            key = self.get_key_nonblocking()
             
             if key == '\x1b':  # Código escape para teclas especiales
-                # Lee los siguientes dos caracteres para determinar la tecla
-                key = sys.stdin.read(2)
-                if key == '[D':  # Flecha izquierda
-                    self.control_pub.publish("LEFT")
-                elif key == '[C':  # Flecha derecha
-                    self.control_pub.publish("RIGHT")
+                arrows = self.get_key_nonblocking() + self.get_key_nonblocking()
+                if arrows == '[D':  # Flecha izquierda
+                    self.current_key = "LEFT"
+                    self.key_pressed = True
+                elif arrows == '[C':  # Flecha derecha
+                    self.current_key = "RIGHT"
+                    self.key_pressed = True
             elif key == ' ':  # Espacio
-                self.control_pub.publish("SHOOT")
+                self.current_key = "SHOOT"
+                self.key_pressed = True
             elif key == 'q':  # Tecla para salir
                 self.running = False
                 rospy.signal_shutdown("User requested quit")
-            else:
-                self.control_pub.publish("STOP")  # Añadido para detener el movimiento
+            elif key is None and self.key_pressed:  # Tecla soltada
+                self.key_pressed = False
+                self.current_key = None
+            
+            time.sleep(0.01)  # Pequeña pausa para no saturar el CPU
 
     def run(self):
         # Iniciar thread para leer teclas
@@ -55,6 +68,8 @@ class ControlNode:
 
         # Loop principal
         while self.running and not rospy.is_shutdown():
+            if self.key_pressed and self.current_key:
+                self.control_pub.publish(self.current_key)
             self.rate.sleep()
 
 if __name__ == '__main__':
@@ -65,6 +80,6 @@ if __name__ == '__main__':
         pass
     finally:
         # Restaurar configuración de terminal
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        if sys.stdin.isatty():
+            termios.tcsetattr(sys.stdin.fileno(), termios.TCSADRAIN, 
+                            termios.tcgetattr(sys.stdin.fileno()))

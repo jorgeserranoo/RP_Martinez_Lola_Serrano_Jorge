@@ -11,5 +11,7 @@ How to run the code:
 8. In the terminal that launches the info user node, you will see a prompt to enter your name, username and age. Do it and press enter.
 9. Now you should see the game starting.
 
+In case of wanting to use the command roslaunch to execute everything, due to the way this is programmed, you will still need more than one terminal. In the first one, you will have to run the commmand "roslaunch ros_game game.launch" and in another terminal "rosrun ros_game info_user.py"
+
 
 

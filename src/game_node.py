@@ -5,11 +5,15 @@ from ros_game.msg import user_msg
 import pygame
 import random
 import time
+import rospkg
 
 class GameNode:
     def __init__(self):
         rospy.init_node('game_node')
         
+        rospack = rospkg.RosPack()
+        package_path = rospack.get_path('ros_game')
+
         # ROS setup
         self.user_sub = rospy.Subscriber('user_information', user_msg, self.user_callback)
         self.control_sub = rospy.Subscriber('keyboard_control', String, self.control_callback)
@@ -23,9 +27,9 @@ class GameNode:
         pygame.display.set_caption("Galaga")
         
         # Cargar recursos
-        self.logo_img = pygame.image.load("logo_galaga.png")
+        self.logo_img = pygame.image.load(f"{package_path}/src/RP_Martinez_Lola_Serrano_Jorge/resources/logo_galaga.png")
         self.logo_img = pygame.transform.scale(self.logo_img, (400, 200))
-        self.player_img = pygame.image.load("nave_galaga.png")
+        self.player_img = pygame.image.load(f"{package_path}/src/RP_Martinez_Lola_Serrano_Jorge/resources/nave_galaga.png")
         self.player_img = pygame.transform.scale(self.player_img, (50, 50))
         
         # Fuentes

@@ -19,6 +19,10 @@ class GameNode:
         self.control_sub = rospy.Subscriber('keyboard_control', String, self.control_callback)
         self.result_pub = rospy.Publisher('result_information', Int64, queue_size=10)
         
+        self.user_name = rospy.get_param("user_name", "default")
+        self.user_name = rospy.set_param("user_name", "jorge")
+        
+        
         # Pygame setup
         pygame.init()
         self.ANCHO = 800

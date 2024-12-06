@@ -22,6 +22,8 @@ class GameNode:
         self.user_name = rospy.get_param("user_name", "default")
         self.user_name = rospy.set_param("user_name", "jorge")
         
+        self.change_player_color = rospy.get_param("change_player_color", )
+        
         
         # Pygame setup
         pygame.init()

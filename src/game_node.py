@@ -14,6 +14,10 @@ class GameNode:
     def __init__(self):
         rospy.init_node('game_node')
         
+        rospy.set_param("screen_param", "phase1")
+        rospy.set_param("change_player_color", 1)
+        rospy.set_param("user_name", "default")
+        
         rospack = rospkg.RosPack()
         package_path = rospack.get_path('ros_game')
 

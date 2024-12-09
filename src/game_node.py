@@ -136,6 +136,7 @@ class GameNode:
     def user_callback(self, data):
         if self.phase == "WELCOME":
             self.user_info = data
+            rospy.set_param("/user_name", data.name)
             rospy.loginfo(f"Welcome {data.name}!")
 
     def control_callback(self, data):
@@ -283,6 +284,8 @@ class GameNode:
     # Fill background with black
         self.screen.fill((0, 0, 0))
 
+        self.change_player_color = rospy.get_param("/change_player_color", 1)
+
         if self.phase == "WELCOME":
             # Update screen parameter to show we're in welcome phase
             rospy.set_param("screen_param", "phase1")
@@ -392,7 +395,7 @@ class GameNode:
             return [
                 (255, 165, 0),    # Orange for static enemies
                 (255, 0, 0),      # Red for mobile enemies
-                (0, 0, 255)       # Blue for falling enemies
+                (0, 255, 255)       # Turquesa for falling enemies
             ]
 
         # Color scheme 3: White, Brown, Gray

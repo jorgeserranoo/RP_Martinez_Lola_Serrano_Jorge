@@ -383,7 +383,7 @@ class GameNode:
         if self.change_player_color == 1:
             return [
                 (255, 0, 0),    # Red for static enemies
-                (255, 0, 255),      # Purple for mobile enemies
+                (128, 0, 128),      # Purple for mobile enemies
                 (0, 0, 255)   # Blue for falling enemies
             ]
 

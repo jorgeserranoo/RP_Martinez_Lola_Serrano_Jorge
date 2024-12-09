@@ -12,6 +12,13 @@ How to run the code:
 9. In the terminal that launches the info user node, you will see a prompt to enter your name, username and age. Do it and press enter.
 10. Now you should see the game starting.
 
+11. For be able to change the difficulty, when the game is still in the phase1, you will have to execute " rosservice call /difficulty "change_difficulty: 'easy/medium/hard'"  " 
+
+12. In order to see the score printed in terminal, you will have to execute the command "  rosservice call /user_score "username: 'username'"  "
+
+13. To see the value of any parameter, you should type in the terminal "rosparam get /name_parameter", and to change the value "rosparam set /name_parameter new_value"
+    13.1. The parameter change_player_color will change the color of the enemies instead of the player because we use a png for the spaceship. It can take values 1, 2 and 3.
+
 If you want to visualize the communication between nodes, use the command "rqt_graph"
 
 In case of wanting to use the command roslaunch to execute everything, due to the way this is programmed, you will still need more than one terminal. In the first one, you will have to run the commmand "roslaunch ros_game game.launch" and in another terminal "rosrun ros_game info_user.py"

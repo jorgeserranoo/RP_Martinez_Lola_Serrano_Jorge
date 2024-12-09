@@ -6,6 +6,9 @@ import pygame
 import random
 import time
 import rospkg
+# At the top of game_node.py, add these imports
+from RP_Martinez_Lola_Serrano_Jorge.srv import GetUserScore, GetUserScoreResponse
+from RP_Martinez_Lola_Serrano_Jorge.srv import SetGameDifficulty, SetGameDifficultyResponse
 
 class GameNode:
     def __init__(self):
@@ -20,9 +23,13 @@ class GameNode:
         self.result_pub = rospy.Publisher('result_information', Int64, queue_size=10)
         
         self.user_name = rospy.get_param("user_name", "default")
-        self.user_name = rospy.set_param("user_name", "jorge")
+        self.change_player_color = rospy.get_param("change_player_color", 1)  # Default: red
+        self.screen_param = rospy.get_param("screen_param", "phase1")
         
-        self.change_player_color = rospy.get_param("change_player_color", )
+        self.score_service = rospy.Service('user_score', GetUserScore, self.handle_get_user_score)
+        self.difficulty_service = rospy.Service('difficulty', SetGameDifficulty, self.handle_set_difficulty)
+        
+        self.difficylty = rospy.get_param("~difficulty", 'easy')
         
         
         # Pygame setup
@@ -76,6 +83,52 @@ class GameNode:
         self.shoot_cooldown = 0.5
         self.last_shoot_time = 0
 
+
+    def handle_get_user_score(self, req):
+        """
+        Service handler for GetUserScore
+        req.username: The username to check score for
+        Returns: Score as a percentage
+        """
+        if req.username == self.user_name:
+            # Convert current score to percentage
+            # Since we don't have a max score defined, let's use a base value
+            # You can adjust this calculation based on your game's scoring system
+            max_score = 1000  # Example maximum score
+            score_percentage = (self.score / max_score) * 100
+            return GetUserScoreResponse(int(score_percentage))
+        return GetUserScoreResponse(0)  # Return 0 if username doesn't match
+    
+    def handle_set_difficulty(self, req):
+        """
+        Service handler for SetGameDifficulty
+        req.change_difficulty: Requested difficulty level ("easy", "medium", "hard")
+        Returns: True if change successful, False otherwise
+        """
+        # Can only change difficulty in WELCOME phase (phase1)
+        if self.phase != "WELCOME":
+            return SetGameDifficultyResponse(False)
+
+        # Validate requested difficulty
+        if req.change_difficulty.lower() in ["easy", "medium", "hard"]:
+            self.difficulty = req.change_difficulty.lower()
+
+            # Adjust game parameters based on difficulty
+            if self.difficulty == "easy":
+                self.enemigos_por_nivel = 2  # Fewer enemies per level
+                self.enemigo_velocidad = 1   # Slower enemies
+            elif self.difficulty == "medium":
+                self.enemigos_por_nivel = 3  # Default number of enemies
+                self.enemigo_velocidad = 2   # Default speed
+            else:  # hard
+                self.enemigos_por_nivel = 4  # More enemies
+                self.enemigo_velocidad = 3   # Faster enemies
+
+            return SetGameDifficultyResponse(True)
+        return SetGameDifficultyResponse(False)
+    
+    
+    
     def user_callback(self, data):
         if self.phase == "WELCOME":
             self.user_info = data
@@ -223,60 +276,128 @@ class GameNode:
                     self.phase = "FINAL"
 
     def render(self):
+    # Fill background with black
         self.screen.fill((0, 0, 0))
-        
+
         if self.phase == "WELCOME":
+            # Update screen parameter to show we're in welcome phase
+            rospy.set_param("screen_param", "phase1")
+
+            # Display logo in center of screen
             logo_rect = self.logo_img.get_rect(center=(self.ANCHO//2, self.ALTO//3))
             self.screen.blit(self.logo_img, logo_rect)
+
+            # Show welcome message if user info is available
             if self.user_info:
                 text = self.font_retro.render(f"Welcome {self.user_info.name}!", True, (255, 255, 255))
                 text_rect = text.get_rect(center=(self.ANCHO//2, self.ALTO*2//3))
                 self.screen.blit(text, text_rect)
-                if pygame.time.get_ticks() > 3000:  # Después de 3 segundos
+
+                # Transition to game phase after 3 seconds
+                if pygame.time.get_ticks() > 3000:
                     self.phase = "GAME"
                     self.crear_enemigos_para_nivel()
-        
+
         elif self.phase == "GAME":
-            # Dibujar jugador
+            # Update screen parameter to show we're in game phase
+            rospy.set_param("screen_param", "phase2")
+
+            # Draw player
             self.screen.blit(self.player_img, (self.player_x, self.player_y))
-            
-            # Dibujar enemigos
+
+            # Get current enemy color scheme based on parameter
+            enemy_colors = self.get_enemy_colors()
+
+            # Draw all static enemies with their color
             for enemigo in self.enemigos_estaticos:
-                pygame.draw.rect(self.screen, (255, 0, 0), (enemigo['x'], enemigo['y'], self.enemigo_ancho, self.enemigo_alto))
+                pygame.draw.rect(self.screen, enemy_colors[0], 
+                               (enemigo['x'], enemigo['y'], 
+                                self.enemigo_ancho, self.enemigo_alto))
+
+            # Draw all mobile enemies with their color
             for enemigo in self.enemigos_moviles:
-                pygame.draw.rect(self.screen, (128, 0, 128),( enemigo['x'], enemigo['y'], self.enemigo_ancho, self.enemigo_alto))
+                pygame.draw.rect(self.screen, enemy_colors[1], 
+                               (enemigo['x'], enemigo['y'], 
+                                self.enemigo_ancho, self.enemigo_alto))
+
+            # Draw all falling enemies with their color
             for enemigo in self.enemigos_caida:
-                pygame.draw.rect(self.screen, (0, 0, 255), (enemigo['x'], enemigo['y'], self.enemigo_ancho, self.enemigo_alto))
-            
-            # Dibujar disparos
+                pygame.draw.rect(self.screen, enemy_colors[2], 
+                               (enemigo['x'], enemigo['y'], 
+                                self.enemigo_ancho, self.enemigo_alto))
+
+            # Draw player shots
             for disparo in self.disparos:
-                pygame.draw.rect(self.screen, (255, 255, 255), (disparo[0], disparo[1], self.disparo_ancho, self.disparo_alto))
+                pygame.draw.rect(self.screen, (255, 255, 255),  # White shots
+                               (disparo[0], disparo[1], 
+                                self.disparo_ancho, self.disparo_alto))
+
+            # Draw enemy shots
             for disparo in self.disparos_enemigos:
-                pygame.draw.rect(self.screen, (255, 255, 255), (disparo[0], disparo[1], self.disparo_ancho, self.disparo_alto))
-            
-            # Mostrar puntuación y nivel
+                pygame.draw.rect(self.screen, (255, 255, 255),  # White shots
+                               (disparo[0], disparo[1], 
+                                self.disparo_ancho, self.disparo_alto))
+
+            # Display score and level
             score_text = self.font_normal.render(f"Score: {self.score}", True, (255, 255, 255))
             level_text = self.font_normal.render(f"Level: {self.nivel_actual}", True, (255, 255, 255))
             self.screen.blit(score_text, (10, 10))
             self.screen.blit(level_text, (self.ANCHO - 100, 10))
-            
+
+            # Update game elements
             self.mover_elementos()
             self.manejar_disparos_enemigos()
             self.check_colisiones()
-            
-            # Verificar si se completó el nivel
+
+            # Check if level is complete
             if not self.enemigos_estaticos and not self.enemigos_moviles and not self.enemigos_caida:
                 self.nivel_actual += 1
                 self.crear_enemigos_para_nivel()
-        
+
         elif self.phase == "FINAL":
+            # Update screen parameter to show we're in final phase
+            rospy.set_param("screen_param", "phase3")
+
+            # Display game over message and final score
             text = self.font_retro.render(f"Game Over - Final Score: {self.score}", True, (255, 255, 255))
             text_rect = text.get_rect(center=(self.ANCHO//2, self.ALTO//2))
             self.screen.blit(text, text_rect)
+
+            # Publish final score and shutdown
             self.result_pub.publish(self.score)
             rospy.signal_shutdown("Game Over")
-        
+
+        # Update display
         pygame.display.flip()
+        
+    def get_enemy_colors(self):
+        """
+        Returns a tuple of three RGB colors based on the change_player_color parameter
+        Each tuple contains three RGB color values, one for each type of enemy
+        """
+        # Color scheme 1: Yellow, Green, Pink
+        if self.change_player_color == 1:
+            return [
+                (255, 0, 0),    # Red for static enemies
+                (255, 0, 255),      # Purple for mobile enemies
+                (0, 0, 255)   # Blue for falling enemies
+            ]
+
+        # Color scheme 2: Orange, Red, Blue
+        elif self.change_player_color == 2:
+            return [
+                (255, 165, 0),    # Orange for static enemies
+                (255, 0, 0),      # Red for mobile enemies
+                (0, 0, 255)       # Blue for falling enemies
+            ]
+
+        # Color scheme 3: White, Brown, Gray
+        else:  # self.change_player_color == 3
+            return [
+                (255, 255, 255),  # White for static enemies
+                (139, 69, 19),    # Brown for mobile enemies
+                (128, 128, 128)   # Gray for falling enemies
+            ]
 
     def run(self):
         while not rospy.is_shutdown() and self.running:

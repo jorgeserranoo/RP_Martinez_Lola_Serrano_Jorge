@@ -1,4 +1,10 @@
 <launch>
+
+    <param name="user_name" type="string" value="default_player"/>
+    <param name="change_player_color" type="int" value="1"/>
+    <param name="screen_param" type="string" value="phase1"/>
+
+    
     <node name="result_node" 
           pkg="ros_game" 
           type="result_node.py" 

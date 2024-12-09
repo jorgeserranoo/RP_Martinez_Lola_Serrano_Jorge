@@ -27,7 +27,7 @@ class GameNode:
         self.result_pub = rospy.Publisher('result_information', Int64, queue_size=10)
         
         self.user_name = rospy.get_param("/user_name", "default")
-        self.change_player_color = rospy.get_param("~/hange_player_color", 1)  # Default: red
+        self.change_player_color = rospy.get_param("/change_player_color", 1)  # Default: red
         self.screen_param = rospy.get_param("/screen_param", "phase1")
         self.difficylty = rospy.get_param("/difficulty", 'medium')
         

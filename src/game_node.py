@@ -7,16 +7,16 @@ import random
 import time
 import rospkg
 # At the top of game_node.py, add these imports
-from RP_Martinez_Lola_Serrano_Jorge.srv import GetUserScore, GetUserScoreResponse
-from RP_Martinez_Lola_Serrano_Jorge.srv import SetGameDifficulty, SetGameDifficultyResponse
+from ros_game.srv import GetUserScore, GetUserScoreResponse
+from ros_game.srv import SetGameDifficulty, SetGameDifficultyResponse
 
 class GameNode:
     def __init__(self):
         rospy.init_node('game_node')
         
-        rospy.set_param("screen_param", "phase1")
-        rospy.set_param("change_player_color", 1)
-        rospy.set_param("user_name", "default")
+        rospy.set_param("/screen_param", "phase1")
+        rospy.set_param("/change_player_color", 1)
+        rospy.set_param("/user_name", "default")
         
         rospack = rospkg.RosPack()
         package_path = rospack.get_path('ros_game')
@@ -26,14 +26,14 @@ class GameNode:
         self.control_sub = rospy.Subscriber('keyboard_control', String, self.control_callback)
         self.result_pub = rospy.Publisher('result_information', Int64, queue_size=10)
         
-        self.user_name = rospy.get_param("user_name", "default")
-        self.change_player_color = rospy.get_param("change_player_color", 1)  # Default: red
-        self.screen_param = rospy.get_param("screen_param", "phase1")
+        self.user_name = rospy.get_param("/user_name", "default")
+        self.change_player_color = rospy.get_param("~/hange_player_color", 1)  # Default: red
+        self.screen_param = rospy.get_param("/screen_param", "phase1")
+        self.difficylty = rospy.get_param("/difficulty", 'medium')
         
         self.score_service = rospy.Service('user_score', GetUserScore, self.handle_get_user_score)
         self.difficulty_service = rospy.Service('difficulty', SetGameDifficulty, self.handle_set_difficulty)
         
-        self.difficylty = rospy.get_param("~difficulty", 'easy')
         
         
         # Pygame setup

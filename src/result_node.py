@@ -3,8 +3,8 @@
 import rospy
 from std_msgs.msg import Int64
 from ros_game.msg import user_msg
-from RP_Martinez_Lola_Serrano_Jorge.srv import GetUserScore, GetUserScoreResponse
-from RP_Martinez_Lola_Serrano_Jorge.srv import SetGameDifficulty, SetGameDifficultyResponse
+from ros_game.srv import GetUserScore, GetUserScoreResponse
+from ros_game.srv import SetGameDifficulty, SetGameDifficultyResponse
 
 
 class ResultNode:
@@ -20,7 +20,14 @@ class ResultNode:
         rospy.Subscriber("user_information", user_msg, self.user_callback)
         rospy.Subscriber("result_information", Int64, self.result_callback)
 
-        self.get_score = rospy.ServiceProxy('user_score', GetUserScore)
+        rospy.loginfo("Waiting for user_score service...")
+        
+        try:
+            rospy.wait_for_service('user_score', timeout=10.0)  # Wait up to 10 seconds
+            self.get_score = rospy.ServiceProxy('user_score', GetUserScore)
+            rospy.loginfo("Connected to user_score service")
+        except rospy.ROSException as e:
+            rospy.logwarn("Service 'user_score' not available: %s", str(e))        
         
         self.rate = rospy.Rate(1)
 

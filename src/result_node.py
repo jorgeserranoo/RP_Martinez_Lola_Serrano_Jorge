@@ -3,6 +3,9 @@
 import rospy
 from std_msgs.msg import Int64
 from ros_game.msg import user_msg
+from RP_Martinez_Lola_Serrano_Jorge.srv import GetUserScore, GetUserScoreResponse
+from RP_Martinez_Lola_Serrano_Jorge.srv import SetGameDifficulty, SetGameDifficultyResponse
+
 
 class ResultNode:
 
@@ -17,11 +20,13 @@ class ResultNode:
         rospy.Subscriber("user_information", user_msg, self.user_callback)
         rospy.Subscriber("result_information", Int64, self.result_callback)
 
+        self.get_score = rospy.ServiceProxy('user_score', GetUserScore)
+        
         self.rate = rospy.Rate(1)
 
     def user_callback(self, data):
         self.username = data.username
-        rospy.loginfo("Username received")
+        rospy.loginfo(f"Username received: {self.username}")
 
     def result_callback(self, data):
         self.score = data.data
@@ -29,7 +34,7 @@ class ResultNode:
         self.display_final_result()
     
     def display_final_result(self):
-
+        
         if self.username and self.score is not None:
             rospy.loginfo("="*50)
             rospy.loginfo("GAME OVER - FINAL RESULTS")

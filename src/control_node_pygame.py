@@ -40,5 +40,5 @@ if __name__ == '__main__':
         controller.run()
     except rospy.ROSInterruptException:
         pass
-    finally:
-        pygame.quit()
+
+    pygame.quit()

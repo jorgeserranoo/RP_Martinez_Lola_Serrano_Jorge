@@ -22,12 +22,8 @@ class ResultNode:
 
         rospy.loginfo("Waiting for user_score service...")
         
-        try:
-            rospy.wait_for_service('user_score', timeout=10.0)  # Wait up to 10 seconds
-            self.get_score = rospy.ServiceProxy('user_score', GetUserScore)
-            rospy.loginfo("Connected to user_score service")
-        except rospy.ROSException as e:
-            rospy.logwarn("Service 'user_score' not available: %s", str(e))        
+        rospy.loginfo("Waiting for user_score service...")
+        self.get_score = rospy.ServiceProxy('user_score', GetUserScore)      
         
         self.rate = rospy.Rate(1)
 

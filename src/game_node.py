@@ -91,17 +91,14 @@ class GameNode:
     def handle_get_user_score(self, req):
         """
         Service handler for GetUserScore
-        req.username: The username to check score for
-        Returns: Score as a percentage
         """
-        if req.username == self.user_name:
-            # Convert current score to percentage
-            # Since we don't have a max score defined, let's use a base value
-            # You can adjust this calculation based on your game's scoring system
-            max_score = 1000  # Example maximum score
-            score_percentage = (self.score / max_score) * 100
+        try:
+            # Removemos la comparación de username y simplemente retornamos el score actual
+            score_percentage = (self.score) if self.score is not None else 0
             return GetUserScoreResponse(int(score_percentage))
-        return GetUserScoreResponse(0)  # Return 0 if username doesn't match
+        except Exception as e:
+            rospy.logerr(f"Error in user_score service: {e}")
+            return GetUserScoreResponse(0)
     
     def handle_set_difficulty(self, req):
         """
@@ -125,8 +122,8 @@ class GameNode:
                 self.enemigos_por_nivel = 3  # Default number of enemies
                 self.enemigo_velocidad = 2   # Default speed
             else:  # hard
-                self.enemigos_por_nivel = 4  # More enemies
-                self.enemigo_velocidad = 3   # Faster enemies
+                self.enemigos_por_nivel = 6  # More enemies
+                self.enemigo_velocidad = 5   # Faster enemies
 
             return SetGameDifficultyResponse(True)
         return SetGameDifficultyResponse(False)
